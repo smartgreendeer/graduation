@@ -14,7 +14,7 @@ load_dotenv()
 
 
 genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
-model = genai.GenerativeModel('gemini-pro')
+model = os.getenv("model_url")
 
 
 st.set_page_config(page_title="Student Helper", page_icon="👨‍🎓")
