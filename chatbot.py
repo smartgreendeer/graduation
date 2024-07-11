@@ -14,7 +14,7 @@ load_dotenv()
 
 
 genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
-model = os.getenv("model_url")
+model = os.getenv("Model_Url")
 
 
 st.set_page_config(page_title="Student Helper", page_icon="👨‍🎓")
@@ -30,7 +30,7 @@ def read_file_content(uploaded_file):
         return None
 
 def get_gemini_response(input_text, file_content, mode="qa"):
-    model = genai.GenerativeModel('gemini-pro')
+    model = model
     if mode == "qa":
         prompt = f"Based on the following content:\n\n{file_content}\n\nAnswer this question: {input_text}"
     elif mode == "summarize":
