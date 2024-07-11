@@ -30,7 +30,7 @@ def read_file_content(uploaded_file):
         return None
 
 def get_gemini_response(input_text, file_content, mode="qa"):
-    model = model
+    model = os.getenv("Model_Url")
     if mode == "qa":
         prompt = f"Based on the following content:\n\n{file_content}\n\nAnswer this question: {input_text}"
     elif mode == "summarize":
@@ -41,13 +41,13 @@ def get_gemini_response(input_text, file_content, mode="qa"):
     return response.text
 
 def analyze_sentiment(text):
-    model = model
+    model = os.getenv("Model_Url")
     prompt = f"Analyze the sentiment of the following text and categorize it as positive, negative, or neutral. Provide a brief explanation for your categorization:\n\n{text}"
     response = model.generate_content(prompt)
     return response.text
 
 def translate_text(text, target_language):
-    model = model
+    model = os.getenv("Model_Url")
     prompt = f"Translate the following text to {target_language}:\n\n{text}"
     response = model.generate_content(prompt)
     return response.text
