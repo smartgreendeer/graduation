@@ -8,6 +8,8 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from PIL import Image
 from dotenv import load_dotenv
+import time
+from google.api_core import exceptions as google_exceptions
 
 
 load_dotenv()
@@ -65,15 +67,99 @@ def save_and_download(content, filename):
             mime="text/plain"
         )
 
+def generate_quiz(file_content):
+    prompt = f"Based on the following content, generate 15 multiple-choice questions. For each question, provide 4 options (A, B, C, D) and indicate the correct answer. Format each question as follows:\n\nQ1. Question text\nA) Option A\nB) Option B\nC) Option C\nD) Option D\nCorrect Answer: X\n\nContent:\n{file_content}"
+    response = model.generate_content(prompt)
+    return response.text
+
+def generate_qui(content):
+    max_retries = 3
+    retry_delay = 5  # seconds
+
+    for attempt in range(max_retries):
+        try:
+            if content.startswith("Generate a quiz about"):
+                prompt = f"""{content}. Generate 15 multiple-choice questions. 
+                For each question, provide 4 options (A, B, C, D) and indicate the correct answer. 
+                Format each question exactly as follows:
+
+                Q1. [Question text]
+                A) [Option A]
+                B) [Option B]
+                C) [Option C]
+                D) [Option D]
+                Correct Answer: [A/B/C/D]
+
+                Repeat this format for all 5 questions."""
+            else:
+                prompt = f"""Based on the following content, generate 15 multiple-choice questions. 
+                For each question, provide 4 options (A, B, C, D) and indicate the correct answer. 
+                Format each question exactly as follows:
+
+                Q1. [Question text]
+                A) [Option A]
+                B) [Option B]
+                C) [Option C]
+                D) [Option D]
+                Correct Answer: [A/B/C/D]
+
+                Repeat this format for all 15 questions.
+
+                Content:
+                {content}"""
+            
+            response = model.generate_content(prompt)
+            return response.text
+        except google_exceptions.ResourceExhausted:
+            if attempt < max_retries - 1:
+                st.warning(f"Rate limit reached. Retrying in {retry_delay} seconds...")
+                time.sleep(retry_delay)
+            else:
+                st.error("Unable to generate quiz due to rate limiting. Please try again later.")
+                return None
+        except Exception as e:
+            st.error(f"An error occurred while generating the quiz: {str(e)}")
+            return None
+
+    return None  # If all retries fail
+
+def parse_quiz(quiz_text):
+    questions = []
+    current_question = {}
+    for line in quiz_text.split('\n'):
+        line = line.strip()
+        if line.startswith('Q'):
+            if current_question:
+                questions.append(current_question)
+            current_question = {'text': line[3:], 'options': {}}
+        elif line.startswith(('A)', 'B)', 'C)', 'D)')) and current_question is not None:
+            option_letter, option_text = line.split(')', 1)
+            current_question['options'][option_letter.strip()] = option_text.strip()
+        elif line.startswith('Correct Answer:') and current_question is not None:
+            current_question['correct'] = line.split(':')[1].strip()
+
+    if current_question:
+        questions.append(current_question)
+
+    if len(questions) == 15 and all(len(q['options']) == 4 and 'correct' in q for q in questions):
+        return questions
+    else:
+        return None
+
+def chatbot_response(user_input):
+    prompt = f"User: {user_input}\nAssistant: "
+    response = model.generate_content(prompt)
+    return response.text
+
 st.title("'👩‍🎓Student Helper👨‍🎓")
-
 st.sidebar.title("Student aid")
-name = st.text_input("hey you? help to be of help  to you \n please, input your name?")
+name = st.sidebar.text_input("Hey you! Help us to be of help to you.\nPlease, input your name:")
 
-st.write(f"Welcome, {name} thank you for choosing us as your to go to student helper")
-feature = st.sidebar.selectbox("Choose a feature that you require as student", ["Document Q&A", "Summarization", "Quiz Generation", "Sentiment Analysis", "Data Visualization", "Translator"])
+if name:
+    st.sidebar.write(f"Welcome, {name}! Thank you for choosing us as your go-to student helper.")
+feature = st.sidebar.selectbox("Choose a feature that you require as student", ["Document Q&A", "Summarization", "Quiz Generation", "Sentiment Analysis", "Data Visualization", "Translator", "Interactive Quiz", "General Chatbot"])
 
-if feature == "Document Q&A" or feature == "Summarization" or feature == "Quiz Generation":
+if feature == "Document Q&A" or feature == "Summarization" or feature == "Quiz Generation" or feature == "Interactive Quiz":
     uploaded_file = st.file_uploader("Upload a file📁:", type=["txt", "pdf"])
 
     if uploaded_file is not None:
@@ -85,21 +171,122 @@ if feature == "Document Q&A" or feature == "Summarization" or feature == "Quiz G
             if feature == "Document Q&A":
                 user_question = st.text_input("Ask a question about the file uploaded📁:")
                 if user_question:
-                    response = get_gemini_response(user_question, file_content, mode="qa")
+                    with st.spinner("Generating response..."):
+                            response = get_gemini_response(user_question, file_content, mode="qa")
                     st.write("Student helper response:")
                     st.write(response)
                     save_and_download(response, "qa_response.txt")
             
             elif feature == "Summarization":
                 if st.button("Summarize Document"):
-                    summary = get_gemini_response("", file_content, mode="summarize")
+                    with st.spinner("Generating summary..."):
+                        summary = get_gemini_response("", file_content, mode="summarize")
                     st.write("Summary of the file")
                     st.write(summary)
                     save_and_download(summary, "summary.txt")
             
+            elif feature == "Interactive Quiz":
+                st.write("Interactive Quiz")
+                
+                quiz_source = st.radio("Choose quiz source:", ["Upload File", "Generate from Subject"])
+                
+                if quiz_source == "Upload File":
+                    uploaded_file = uploaded_file
+                    if uploaded_file is not None:
+                        file_content = read_file_content(uploaded_file)
+                        if file_content:
+                            st.success("File uploaded successfully✅!")
+                        else:
+                            st.error("Failed to read file content. Please try again.")
+                            file_content = None
+                    else:
+                        file_content = None
+                else:
+                    subject = st.text_input("Enter a subject for the quiz:")
+                    file_content = f"Generate a quiz about {subject}" if subject else None
+
+                if st.button("Generate Quiz") and file_content:
+                    with st.spinner("Generating quiz..."):
+                        quiz = generate_qui(file_content)
+                    if quiz:
+                        questions = parse_quiz(quiz)
+                        if questions:
+                            st.session_state.quiz = questions
+                            st.session_state.current_question = 0
+                            st.session_state.score = 0
+                            st.session_state.user_answers = []
+                            st.session_state.quiz_completed = False
+                            st.success("Quiz generated successfully!")
+                        else:
+                            st.error("Failed to parse the generated quiz. Please try again.")
+                    else:
+                        st.error("Failed to generate quiz. Please try again.")
+
+                if 'quiz' in st.session_state and not st.session_state.quiz_completed:
+                    question = st.session_state.quiz[st.session_state.current_question]
+                    st.write(f"Question {st.session_state.current_question + 1}: {question['text']}")
+                    
+                    options = list(question['options'].keys())
+                    user_answer = st.radio("Select your answer:", options, format_func=lambda x: f"{x}) {question['options'][x]}")
+                    
+                    if st.button("Submit Answer"):
+                        st.session_state.user_answers.append(user_answer)
+                        
+                        if user_answer == question['correct']:
+                            st.success("Correct!")
+                            st.session_state.score += 1
+                        else:
+                            st.error(f"Incorrect. The correct answer was {question['correct']}")
+                        
+                        st.session_state.current_question += 1
+                        
+                        if st.session_state.current_question >= len(st.session_state.quiz):
+                            st.session_state.quiz_completed = True
+                        
+                        st.experimental_rerun()
+
+                if 'quiz' in st.session_state and st.session_state.quiz_completed:
+                    total_questions = len(st.session_state.quiz)
+                    score = st.session_state.score
+                    percentage = (score / total_questions) * 100
+
+                    st.write(f"Quiz completed!")
+                    st.write(f"Your score: {score}/{total_questions}")
+                    st.write(f"Percentage: {percentage:.2f}%")
+
+                    # Provide feedback based on the percentage
+                    if percentage >= 90:
+                        st.success("Excellent work! You've mastered this topic!")
+                    elif percentage >= 70:
+                        st.success("Great job! You have a good understanding of the material.")
+                    elif percentage >= 50:
+                        st.warning("Good effort! There's room for improvement. Keep studying!")
+                    else:
+                        st.error("You might need to review this topic more. Don't give up!")
+                    
+                    st.write("\nQuiz Review:")
+                    for i, (question, user_answer) in enumerate(zip(st.session_state.quiz, st.session_state.user_answers)):
+                        st.write(f"Q{i+1}: {question['text']}")
+                        st.write(f"Your answer: {user_answer}) {question['options'][user_answer]}")
+                        st.write(f"Correct answer: {question['correct']}) {question['options'][question['correct']]}")
+                        if user_answer == question['correct']:
+                            st.success("Correct!")
+                        else:
+                            st.error("Incorrect")
+                        st.write("---")
+
+                    if st.button("Start New Quiz"):
+                        del st.session_state.quiz
+                        del st.session_state.current_question
+                        del st.session_state.score
+                        del st.session_state.user_answers
+                        del st.session_state.quiz_completed
+                        st.experimental_rerun()
+            
             elif feature == "Quiz Generation":
                 if st.button("Generate Quiz"):
-                    quiz = get_gemini_response("", file_content, mode="quiz")
+                    with st.spinner("Generating quiz..."):
+                        quiz = get_gemini_response("", file_content, mode="quiz")
                     st.write("Quiz generated from the file📁:")
                     st.write(quiz)
                     save_and_download(quiz, "quiz.txt")
@@ -107,7 +294,8 @@ if feature == "Document Q&A" or feature == "Summarization" or feature == "Quiz G
 elif feature == "Sentiment Analysis":
     text_for_analysis = st.text_area("Enter text for sentiment analysis:")
     if st.button("Analyze Sentiment"):
-        sentiment = analyze_sentiment(text_for_analysis)
+        with st.spinner("Generating sentiment..."):
+            sentiment = analyze_sentiment(text_for_analysis)
         st.write("Sentiment analysis")
         st.write(sentiment)
         save_and_download(sentiment, "sentiment_analysis.txt")
@@ -150,12 +338,21 @@ elif feature == "Translator":
     
     if st.button("Translate"):
         if text_to_translate and target_language:
-            translation = translate_text(text_to_translate, target_language)
+            with st.spinner("Translating text..."):
+                translation = translate_text(text_to_translate, target_language)
             st.write("Translation:")
             st.write(translation)
             save_and_download(translation, "translation.txt")
         else:
             st.error("Please fill out all fields")
+
+elif feature == "General Chatbot":
+    st.write("Chat with our general-purpose AI assistant:")
+    user_input = st.text_input("You:")
+    if user_input:
+        response = chatbot_response(user_input)
+        st.write("AI Assistant:")
+        st.write(response)
 
 st.sidebar.markdown("""
 ## How to use:

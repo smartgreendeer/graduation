@@ -41,9 +41,11 @@ def main():
     st.set_page_config(page_title='Student Helper', page_icon="👨‍🎓")
     st.title('👩‍🎓Student Helper👨‍🎓')
 
-    name = st.text_input("hey you? help to be of help  to you \n please, input your name?")
+    st.sidebar.title("Student aid")
+    name = st.sidebar.text_input("Hey you! Help us to be of help to you.\nPlease, input your name:")
 
-    st.write(f"Welcome, {name} thank you for choosing us as your to go to student helper")
+    if name:
+        st.sidebar.write(f"Welcome, {name}! Thank you for choosing us as your go-to student helper.")
     
     st.markdown('This app helps you to extract text from PDF, EPUB and TXT files')
     st.write("Upload a file📁:")
