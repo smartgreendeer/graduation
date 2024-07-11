@@ -81,22 +81,22 @@ def generate_qui(content):
             if content.startswith("Generate a quiz about"):
                 prompt = f"""{content}. Generate 15 multiple-choice questions. 
                 For each question, provide 4 options (A, B, C, D) and indicate the correct answer. 
-                Format each question exactly as follows:
+                Format each question as follows:
 
-                Q1. [Question text]
+                Question: [Question text]
                 A) [Option A]
                 B) [Option B]
                 C) [Option C]
                 D) [Option D]
                 Correct Answer: [A/B/C/D]
 
-                Repeat this format for all 5 questions."""
+                Repeat this format for all 15 questions."""
             else:
                 prompt = f"""Based on the following content, generate 15 multiple-choice questions. 
                 For each question, provide 4 options (A, B, C, D) and indicate the correct answer. 
-                Format each question exactly as follows:
+                Format each question as follows:
 
-                Q1. [Question text]
+                Question: [Question text]
                 A) [Option A]
                 B) [Option B]
                 C) [Option C]
@@ -106,32 +106,31 @@ def generate_qui(content):
                 Repeat this format for all 15 questions.
 
                 Content:
-                {content}"""
-            
+                {content[:1000]}..."""
+
             response = model.generate_content(prompt)
             return response.text
         except google_exceptions.ResourceExhausted:
-            if attempt < max_retries - 1:
-                st.warning(f"Rate limit reached. Retrying in {retry_delay} seconds...")
-                time.sleep(retry_delay)
-            else:
-                st.error("Unable to generate quiz due to rate limiting. Please try again later.")
-                return None
+            st.warning(f"Rate limit reached. Retrying in {retry_delay} seconds... (attempt {attempt + 1})")
+            time.sleep(retry_delay)
         except Exception as e:
             st.error(f"An error occurred while generating the quiz: {str(e)}")
             return None
+
+    st.error("All attempts to generate quiz failed.")
+    return None
 
     return None  # If all retries fail
 
 def parse_quiz(quiz_text):
     questions = []
-    current_question = {}
+    current_question = None
     for line in quiz_text.split('\n'):
         line = line.strip()
         if line.startswith('Q'):
             if current_question:
                 questions.append(current_question)
-            current_question = {'text': line[3:], 'options': {}}
+            current_question = {'text': line[3:], 'options': {}}  # Initialize 'options' here
         elif line.startswith(('A)', 'B)', 'C)', 'D)')) and current_question is not None:
             option_letter, option_text = line.split(')', 1)
             current_question['options'][option_letter.strip()] = option_text.strip()
@@ -141,6 +140,7 @@ def parse_quiz(quiz_text):
     if current_question:
         questions.append(current_question)
 
+    # Validate that we have 15 complete questions
     if len(questions) == 15 and all(len(q['options']) == 4 and 'correct' in q for q in questions):
         return questions
     else:
@@ -185,7 +185,7 @@ if feature == "Document Q&A" or feature == "Summarization" or feature == "Quiz G
                     st.write(summary)
                     save_and_download(summary, "summary.txt")
             
-            elif feature == "Interactive Quiz":
+            if feature == "Interactive Quiz":
                 st.write("Interactive Quiz")
                 
                 quiz_source = st.radio("Choose quiz source:", ["Upload File", "Generate from Subject"])
@@ -195,7 +195,7 @@ if feature == "Document Q&A" or feature == "Summarization" or feature == "Quiz G
                     if uploaded_file is not None:
                         file_content = read_file_content(uploaded_file)
                         if file_content:
-                            st.success("File uploaded successfully✅!")
+                            st.success(f"File '{uploaded_file.name}' uploaded and read successfully✅!")
                         else:
                             st.error("Failed to read file content. Please try again.")
                             file_content = None
@@ -209,34 +209,31 @@ if feature == "Document Q&A" or feature == "Summarization" or feature == "Quiz G
                     with st.spinner("Generating quiz..."):
                         quiz = generate_qui(file_content)
                     if quiz:
-                        questions = parse_quiz(quiz)
-                        if questions:
-                            st.session_state.quiz = questions
-                            st.session_state.current_question = 0
-                            st.session_state.score = 0
-                            st.session_state.user_answers = []
-                            st.session_state.quiz_completed = False
-                            st.success("Quiz generated successfully!")
-                        else:
-                            st.error("Failed to parse the generated quiz. Please try again.")
+                        st.session_state.quiz = quiz.split('\n\n')  # Split questions into a list
+                        st.session_state.current_question = 0
+                        st.session_state.score = 0
+                        st.session_state.quiz_completed = False
+                        st.success("Quiz generated successfully!")
                     else:
                         st.error("Failed to generate quiz. Please try again.")
 
-                if 'quiz' in st.session_state and not st.session_state.quiz_completed:
-                    question = st.session_state.quiz[st.session_state.current_question]
-                    st.write(f"Question {st.session_state.current_question + 1}: {question['text']}")
+                if 'quiz' in st.session_state and not st.session_state.get('quiz_completed', False):
+                    question_block = st.session_state.quiz[st.session_state.current_question]
+                    question_lines = question_block.split('\n')
                     
-                    options = list(question['options'].keys())
-                    user_answer = st.radio("Select your answer:", options, format_func=lambda x: f"{x}) {question['options'][x]}")
+                    st.write(f"Question {st.session_state.current_question + 1}:")
+                    st.write(question_lines[0].replace("Question: ", ""))
+                    
+                    options = question_lines[1:5]
+                    user_answer = st.radio("Select your answer:", options, format_func=lambda x: x)
                     
                     if st.button("Submit Answer"):
-                        st.session_state.user_answers.append(user_answer)
-                        
-                        if user_answer == question['correct']:
+                        correct_answer = question_lines[-1].replace("Correct Answer: ", "")
+                        if user_answer.startswith(correct_answer):
                             st.success("Correct!")
                             st.session_state.score += 1
                         else:
-                            st.error(f"Incorrect. The correct answer was {question['correct']}")
+                            st.error(f"Incorrect. The correct answer was {correct_answer}")
                         
                         st.session_state.current_question += 1
                         
@@ -245,7 +242,7 @@ if feature == "Document Q&A" or feature == "Summarization" or feature == "Quiz G
                         
                         st.experimental_rerun()
 
-                if 'quiz' in st.session_state and st.session_state.quiz_completed:
+                if 'quiz' in st.session_state and st.session_state.get('quiz_completed', False):
                     total_questions = len(st.session_state.quiz)
                     score = st.session_state.score
                     percentage = (score / total_questions) * 100
@@ -263,24 +260,11 @@ if feature == "Document Q&A" or feature == "Summarization" or feature == "Quiz G
                         st.warning("Good effort! There's room for improvement. Keep studying!")
                     else:
                         st.error("You might need to review this topic more. Don't give up!")
-                    
-                    st.write("\nQuiz Review:")
-                    for i, (question, user_answer) in enumerate(zip(st.session_state.quiz, st.session_state.user_answers)):
-                        st.write(f"Q{i+1}: {question['text']}")
-                        st.write(f"Your answer: {user_answer}) {question['options'][user_answer]}")
-                        st.write(f"Correct answer: {question['correct']}) {question['options'][question['correct']]}")
-                        if user_answer == question['correct']:
-                            st.success("Correct!")
-                        else:
-                            st.error("Incorrect")
-                        st.write("---")
 
                     if st.button("Start New Quiz"):
-                        del st.session_state.quiz
-                        del st.session_state.current_question
-                        del st.session_state.score
-                        del st.session_state.user_answers
-                        del st.session_state.quiz_completed
+                        for key in list(st.session_state.keys()):
+                            if key in ['quiz', 'current_question', 'score', 'quiz_completed']:
+                                del st.session_state[key]
                         st.experimental_rerun()
             
             elif feature == "Quiz Generation":
