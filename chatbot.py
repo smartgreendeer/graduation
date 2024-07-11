@@ -13,8 +13,10 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
-genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
-model = os.getenv("Model_Url")
+#genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
+genai.configure(api_key=os.getenv("AIzaSyCBQxXktqsuZcJBhqep8iX-_NtbFgf8CzI"))
+
+model = genai.GenerativeModel('gemini-pro')
 
 
 st.set_page_config(page_title="Student Helper", page_icon="👨‍🎓")
@@ -30,7 +32,7 @@ def read_file_content(uploaded_file):
         return None
 
 def get_gemini_response(input_text, file_content, mode="qa"):
-    model = os.getenv("Model_Url")
+    model = genai.GenerativeModel('gemini-pro')
     if mode == "qa":
         prompt = f"Based on the following content:\n\n{file_content}\n\nAnswer this question: {input_text}"
     elif mode == "summarize":
@@ -41,13 +43,13 @@ def get_gemini_response(input_text, file_content, mode="qa"):
     return response.text
 
 def analyze_sentiment(text):
-    model = os.getenv("Model_Url")
+    model = genai.GenerativeModel('gemini-pro')
     prompt = f"Analyze the sentiment of the following text and categorize it as positive, negative, or neutral. Provide a brief explanation for your categorization:\n\n{text}"
     response = model.generate_content(prompt)
     return response.text
 
 def translate_text(text, target_language):
-    model = os.getenv("Model_Url")
+    model = genai.GenerativeModel('gemini-pro')
     prompt = f"Translate the following text to {target_language}:\n\n{text}"
     response = model.generate_content(prompt)
     return response.text
@@ -84,7 +86,7 @@ if feature == "Document Q&A" or feature == "Summarization" or feature == "Quiz G
                 user_question = st.text_input("Ask a question about the file uploaded📁:")
                 if user_question:
                     response = get_gemini_response(user_question, file_content, mode="qa")
-                    st.write("Gemini's response:")
+                    st.write("Student helper response:")
                     st.write(response)
                     save_and_download(response, "qa_response.txt")
             
