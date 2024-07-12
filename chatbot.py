@@ -12,7 +12,7 @@ from google.api_core import exceptions as google_exceptions
 
 load_dotenv()
 
-genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
+genai.configure(api_key=os.getenv("GOOGLE_API_KEY_1"))
 
 model = genai.GenerativeModel('gemini-pro')
 
