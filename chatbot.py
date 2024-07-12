@@ -1,12 +1,10 @@
 import streamlit as st
 import google.generativeai as genai
 import os
-import tempfile
-import PyPDF2
 import io
 import pandas as pd
 import matplotlib.pyplot as plt
-from PIL import Image
+import PyPDF2
 from dotenv import load_dotenv
 import time
 from google.api_core import exceptions as google_exceptions
@@ -14,15 +12,13 @@ from google.api_core import exceptions as google_exceptions
 
 load_dotenv()
 
-
-#genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
-genai.configure(api_key="AIzaSyCBQxXktqsuZcJBhqep8iX-_NtbFgf8CzI")
+genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
 
 model = genai.GenerativeModel('gemini-pro')
 
-
 st.set_page_config(page_title="Student Helper", page_icon="👨‍🎓")
 
+@st.cache_data
 def read_file_content(uploaded_file):
     if uploaded_file.type == "text/plain":
         return uploaded_file.getvalue().decode("utf-8")
@@ -33,8 +29,8 @@ def read_file_content(uploaded_file):
         st.error("Unsupported file type. Please upload a .txt or .pdf file.")
         return None
 
+@st.cache_data
 def get_gemini_response(input_text, file_content, mode="qa"):
-    model = genai.GenerativeModel('gemini-pro')
     if mode == "qa":
         prompt = f"Based on the following content:\n\n{file_content}\n\nAnswer this question: {input_text}"
     elif mode == "summarize":
@@ -44,34 +40,31 @@ def get_gemini_response(input_text, file_content, mode="qa"):
     response = model.generate_content(prompt)
     return response.text
 
+@st.cache_data
 def analyze_sentiment(text):
-    model = genai.GenerativeModel('gemini-pro')
     prompt = f"Analyze the sentiment of the following text and categorize it as positive, negative, or neutral. Provide a brief explanation for your categorization:\n\n{text}"
     response = model.generate_content(prompt)
     return response.text
 
+@st.cache_data
 def translate_text(text, target_language):
-    model = genai.GenerativeModel('gemini-pro')
     prompt = f"Translate the following text to {target_language}:\n\n{text}"
     response = model.generate_content(prompt)
     return response.text
 
 def save_and_download(content, filename):
-    with open(filename, "w", encoding="utf-8") as f:
-        f.write(content)
-    with open(filename, "r", encoding="utf-8") as f:
-        st.download_button(
-            label="Download Result",
-            data=f.read(),
-            file_name=filename,
-            mime="text/plain"
-        )
+    buffer = io.BytesIO()
+    buffer.write(content.encode())
+    buffer.seek(0)
+    
+    st.download_button(
+        label="Download Result",
+        data=buffer,
+        file_name=filename,
+        mime="text/plain"
+    )
 
-def generate_quiz(file_content):
-    prompt = f"Based on the following content, generate 15 multiple-choice questions. For each question, provide 4 options (A, B, C, D) and indicate the correct answer. Format each question as follows:\n\nQ1. Question text\nA) Option A\nB) Option B\nC) Option C\nD) Option D\nCorrect Answer: X\n\nContent:\n{file_content}"
-    response = model.generate_content(prompt)
-    return response.text
-
+@st.cache_data
 def generate_qui(content):
     max_retries = 3
     retry_delay = 5  # seconds
@@ -120,46 +113,31 @@ def generate_qui(content):
     st.error("All attempts to generate quiz failed.")
     return None
 
-    return None  # If all retries fail
+@st.cache_data
+def generate_quiz(file_content):
+    prompt = f"Based on the following content, generate 15 multiple-choice questions. For each question, provide 4 options (A, B, C, D) and indicate the correct answer. Format each question as follows:\n\nQ1. Question text\nA) Option A\nB) Option B\nC) Option C\nD) Option D\nCorrect Answer: X\n\nContent:\n{file_content}"
+    response = model.generate_content(prompt)
+    return response.text
 
-def parse_quiz(quiz_text):
-    questions = []
-    current_question = None
-    for line in quiz_text.split('\n'):
-        line = line.strip()
-        if line.startswith('Q'):
-            if current_question:
-                questions.append(current_question)
-            current_question = {'text': line[3:], 'options': {}}  # Initialize 'options' here
-        elif line.startswith(('A)', 'B)', 'C)', 'D)')) and current_question is not None:
-            option_letter, option_text = line.split(')', 1)
-            current_question['options'][option_letter.strip()] = option_text.strip()
-        elif line.startswith('Correct Answer:') and current_question is not None:
-            current_question['correct'] = line.split(':')[1].strip()
-
-    if current_question:
-        questions.append(current_question)
-
-    # Validate that we have 15 complete questions
-    if len(questions) == 15 and all(len(q['options']) == 4 and 'correct' in q for q in questions):
-        return questions
-    else:
-        return None
-
+@st.cache_data
 def chatbot_response(user_input):
     prompt = f"User: {user_input}\nAssistant: "
     response = model.generate_content(prompt)
     return response.text
 
-st.title("'👩‍🎓Student Helper👨‍🎓")
+# Main app
+st.title("👩‍🎓Student Helper👨‍🎓")
 st.sidebar.title("Student aid")
 name = st.sidebar.text_input("Hey you! Help us to be of help to you.\nPlease, input your name:")
 
 if name:
     st.sidebar.write(f"Welcome, {name}! Thank you for choosing us as your go-to student helper.")
-feature = st.sidebar.selectbox("Choose a feature that you require as student", ["Document Q&A", "Summarization", "Quiz Generation", "Sentiment Analysis", "Data Visualization", "Translator", "Interactive Quiz", "General Chatbot"])
 
-if feature == "Document Q&A" or feature == "Summarization" or feature == "Quiz Generation" or feature == "Interactive Quiz":
+feature = st.sidebar.selectbox("Choose a feature that you require as student", 
+                               ["Document Q&A", "Summarization", "Quiz Generation", "Sentiment Analysis", 
+                                "Data Visualization", "Translator", "Interactive Quiz", "General Chatbot"])
+
+if feature in ["Document Q&A", "Summarization", "Quiz Generation", "Interactive Quiz"]:
     uploaded_file = st.file_uploader("Upload a file📁:", type=["txt", "pdf"])
 
     if uploaded_file is not None:
@@ -172,7 +150,7 @@ if feature == "Document Q&A" or feature == "Summarization" or feature == "Quiz G
                 user_question = st.text_input("Ask a question about the file uploaded📁:")
                 if user_question:
                     with st.spinner("Generating response..."):
-                            response = get_gemini_response(user_question, file_content, mode="qa")
+                        response = get_gemini_response(user_question, file_content, mode="qa")
                     st.write("Student helper response:")
                     st.write(response)
                     save_and_download(response, "qa_response.txt")
@@ -185,22 +163,13 @@ if feature == "Document Q&A" or feature == "Summarization" or feature == "Quiz G
                     st.write(summary)
                     save_and_download(summary, "summary.txt")
             
-            if feature == "Interactive Quiz":
+            elif feature == "Interactive Quiz":
                 st.write("Interactive Quiz")
                 
                 quiz_source = st.radio("Choose quiz source:", ["Upload File", "Generate from Subject"])
                 
                 if quiz_source == "Upload File":
-                    uploaded_file = uploaded_file
-                    if uploaded_file is not None:
-                        file_content = read_file_content(uploaded_file)
-                        if file_content:
-                            st.success(f"File '{uploaded_file.name}' uploaded and read successfully✅!")
-                        else:
-                            st.error("Failed to read file content. Please try again.")
-                            file_content = None
-                    else:
-                        file_content = None
+                    file_content = file_content
                 else:
                     subject = st.text_input("Enter a subject for the quiz:")
                     file_content = f"Generate a quiz about {subject}" if subject else None
@@ -209,7 +178,7 @@ if feature == "Document Q&A" or feature == "Summarization" or feature == "Quiz G
                     with st.spinner("Generating quiz..."):
                         quiz = generate_qui(file_content)
                     if quiz:
-                        st.session_state.quiz = quiz.split('\n\n')  # Split questions into a list
+                        st.session_state.quiz = quiz.split('\n\n')
                         st.session_state.current_question = 0
                         st.session_state.score = 0
                         st.session_state.quiz_completed = False
@@ -251,7 +220,6 @@ if feature == "Document Q&A" or feature == "Summarization" or feature == "Quiz G
                     st.write(f"Your score: {score}/{total_questions}")
                     st.write(f"Percentage: {percentage:.2f}%")
 
-                    # Provide feedback based on the percentage
                     if percentage >= 90:
                         st.success("Excellent work! You've mastered this topic!")
                     elif percentage >= 70:
@@ -317,7 +285,7 @@ elif feature == "Data Visualization":
 
 elif feature == "Translator":
     st.write("Enter text to translate:")
-    text_to_translate = st.text_area("please \n Type your text that you want to translate")
+    text_to_translate = st.text_area("Please type your text that you want to translate")
     target_language = st.text_input("Input language you require:")
     
     if st.button("Translate"):
@@ -344,5 +312,5 @@ st.sidebar.markdown("""
 2. Follow the instructions for each feature
 3. Get answers you require
 4. Download the results as a text file
-5. Incase your document is in epub visit the other pages and convert it to txt format for easy aiding of the you
+5. In case your document is in epub format, convert it to txt format for easy processing
 """)
