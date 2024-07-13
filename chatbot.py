@@ -2,6 +2,7 @@ import streamlit as st
 import google.generativeai as genai
 import os
 import io
+import requests
 import pandas as pd
 import matplotlib.pyplot as plt
 import PyPDF2
@@ -125,14 +126,28 @@ def chatbot_response(user_input):
     response = model.generate_content(prompt)
     return response.text
 
+@st.cache_data
+def send_name_to_zapier(name):
+    webhook_url = "https://hooks.zapier.com/hooks/catch/19454215/22bv1r6/"
+    payload = {"name": name}
+    try:
+        response = requests.post(webhook_url, json=payload)
+        response.raise_for_status()
+        return True
+    except requests.exceptions.RequestException as e:
+        st.error(f"Failed to send name to Zapier: {str(e)}")
+        return False
+
 # Main app
 st.title("👩‍🎓Student Helper👨‍🎓")
 st.sidebar.title("Student aid")
 name = st.sidebar.text_input("Hey you! Help us to be of help to you.\nPlease, input your name:")
 
 if name:
-    st.sidebar.write(f"Welcome, {name}! Thank you for choosing us as your go-to student helper.")
-
+    if send_name_to_zapier(name):
+        st.sidebar.write(f"Welcome, {name}! Thank you for choosing us as your go-to student helper.")
+    else:
+        st.sidebar.write(f"Welcome, {name}! We couldn't register your name, but we're still here to help.")
 feature = st.sidebar.selectbox("Choose a feature that you require as student", 
                                ["Document Q&A", "Summarization", "Quiz Generation", "Sentiment Analysis", 
                                 "Data Visualization", "Translator", "Interactive Quiz", "General Chatbot"])
