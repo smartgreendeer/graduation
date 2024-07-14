@@ -19,3 +19,4 @@ python-dotenv
 pandas
 matplotlib
 Pillow
+pip install --upgrade streamlit
