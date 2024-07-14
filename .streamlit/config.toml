@@ -1,3 +1,5 @@
+[client]
+showErrorDetails = false
 [theme]
 primaryColor="#4bff64"
 backgroundColor="#2bf341"
