@@ -39,6 +39,20 @@ def save_text_as_txt(text, filename):
 # Function to delete temporary files
 def delete_temp_file(file_path):
     os.remove(file_path)
+    
+    
+# Function to send user name to Zapier
+@st.cache_data
+def send_name_to_zapier(name):
+    webhook_url = "https://hooks.zapier.com/hooks/catch/19454215/22bv1r6/"
+    payload = {"name": name}
+    try:
+        response = requests.post(webhook_url, json=payload)
+        response.raise_for_status()
+        return True
+    except requests.exceptions.RequestException as e:
+        st.error(f"Failed to send name to Zapier: {str(e)}")
+        return False
 
 # Main function to run the Streamlit app
 def main():
@@ -51,7 +65,10 @@ def main():
     name = st.sidebar.text_input("Hey you! Help us to be of help to you.\nPlease, input your name:")
 
     if name:
-        st.sidebar.write(f"Welcome, {name}! Thank you for choosing us as your go-to student helper.")
+        if send_name_to_zapier(name):
+            st.sidebar.write(f"Welcome, {name}! Thank you for choosing us as your go-to student helper.")
+        else:
+            st.sidebar.write(f"Welcome, {name}! We couldn't register your name, but we're still here to help.")
 
     # Main page content
     st.markdown('This app helps you to extract text from PDF, EPUB and TXT files')
