@@ -303,35 +303,39 @@ elif feature == "Data Visualization":
         st.write("Data Preview:")
         st.write(data.head())
         
-        # Identify numeric columns
-        numeric_columns = data.select_dtypes(include=['int64', 'float64']).columns.tolist()
+        all_columns = data.columns.tolist()
         
-        if len(numeric_columns) < 2:
-            st.warning("The uploaded CSV file doesn't contain enough numeric columns for visualization. Please upload a file with at least two numeric columns.")
+        if len(all_columns) < 2:
+            st.warning("The uploaded CSV file doesn't contain enough columns for visualization. Please upload a file with at least two columns.")
         else:
             st.write("Choose your visualization options:")
-            x_column = st.selectbox("X-axis", numeric_columns)
-            y_column = st.selectbox("Y-axis", numeric_columns, index=1 if len(numeric_columns) > 1 else 0)
+            x_column = st.selectbox("X-axis", all_columns)
+            y_column = st.selectbox("Y-axis", all_columns, index=1 if len(all_columns) > 1 else 0)
             
             chart_type = st.radio("Select chart type", ["Scatter", "Line", "Bar"])
             
             if st.button("Generate Visualization"):
-                # Create plot based on user selection
-                fig, ax = plt.subplots()
-                if chart_type == "Bar":
-                    data.plot(kind="bar", x=x_column, y=y_column, ax=ax)
-                elif chart_type == "Line":
-                    data.plot(kind="line", x=x_column, y=y_column, ax=ax)
-                else:
-                    data.plot(kind="scatter", x=x_column, y=y_column, ax=ax)
-                
-                plt.title(f"{chart_type} Chart: {y_column} vs {x_column}")
-                plt.xlabel(x_column)
-                plt.ylabel(y_column)
-                st.pyplot(fig)
-                
-                plot_description = f"Chart Type: {chart_type}\nX-axis: {x_column}\nY-axis: {y_column}"
-                save_and_download(plot_description, "plot_description.txt")
+                try:
+                    # Create plot based on user selection
+                    fig, ax = plt.subplots()
+                    if chart_type == "Bar":
+                        data.plot(kind="bar", x=x_column, y=y_column, ax=ax)
+                    elif chart_type == "Line":
+                        data.plot(kind="line", x=x_column, y=y_column, ax=ax)
+                    else:
+                        data.plot(kind="scatter", x=x_column, y=y_column, ax=ax)
+                    
+                    plt.title(f"{chart_type} Chart: {y_column} vs {x_column}")
+                    plt.xlabel(x_column)
+                    plt.ylabel(y_column)
+                    st.pyplot(fig)
+                    
+                    plot_description = f"Chart Type: {chart_type}\nX-axis: {x_column}\nY-axis: {y_column}"
+                    save_and_download(plot_description, "plot_description.txt")
+                except Exception as e:
+                    st.error(f"An error occurred while generating the visualization: {str(e)}")
+                    st.error("This may be due to incompatible data types for the selected columns and chart type.")
+                    st.error("Try selecting different columns or a different chart type.")
 
 # Translator
 elif feature == "Translator":
