@@ -78,7 +78,7 @@ def save_and_download(content, filename):
 
 # Function to generate quiz with retry mechanism
 @st.cache_data
-def generate_qui(content):
+def generate_qui(content, difficulty):
     max_retries = 3
     retry_delay = 5  # seconds
 
@@ -86,7 +86,7 @@ def generate_qui(content):
         try:
             # Prepare prompt based on content type
             if content.startswith("Generate a quiz about"):
-                prompt = f"""{content}. Generate 15 multiple-choice questions. 
+                prompt = f"""Based on the following content, generate 15 multiple-choice questions at a {difficulty} level. 
                 For each question, provide 4 options (A, B, C, D) and indicate the correct answer. 
                 Format each question as follows:
 
@@ -99,7 +99,7 @@ def generate_qui(content):
 
                 Repeat this format for all 15 questions."""
             else:
-                prompt = f"""Based on the following content, generate 15 multiple-choice questions. 
+                prompt = f"""Based on the following content, generate 15 multiple-choice questions at a {difficulty} level. 
                 For each question, provide 4 options (A, B, C, D) and indicate the correct answer. 
                 Format each question as follows:
 
@@ -127,32 +127,13 @@ def generate_qui(content):
     st.error("All attempts to generate quiz failed.")
     return None
 
-# Function to generate quiz with difficulty level
-@st.cache_data
-def generate_quiz_with_difficulty(content, difficulty):
-    prompt = f"""Based on the following content, generate 15 multiple-choice questions at a {difficulty} level. 
-    For each question, provide 4 options (A, B, C, D) and indicate the correct answer. 
-    Format each question as follows:
-
-    Question: [Question text]
-    A) [Option A]
-    B) [Option B]
-    C) [Option C]
-    D) [Option D]
-    Correct Answer: [A/B/C/D]
-
-    Repeat this format for all 15 questions.
-
-    Content:
-    {content[:1000]}..."""
-
     response = model.generate_content(prompt)
     return response.text
 
 # Function to generate quiz (alternative version)
 @st.cache_data
-def generate_quiz(file_content):
-    prompt = f"Based on the following content, generate 15 multiple-choice questions. For each question, provide 4 options (A, B, C, D) and indicate the correct answer. Format each question as follows:\n\nQ1. Question text\nA) Option A\nB) Option B\nC) Option C\nD) Option D\nCorrect Answer: X\n\nContent:\n{file_content}"
+def generate_quiz(file_content, difficulty):
+    prompt = f"Based on the following content, generate 15 multiple-choice questions at a {difficulty} level. For each question, provide 4 options (A, B, C, D) and indicate the correct answer. Format each question as follows:\n\nQ1. Question text\nA) Option A\nB) Option B\nC) Option C\nD) Option D\nCorrect Answer: X\n\nContent:\n{file_content}"
     response = model.generate_content(prompt)
     return response.text
 
