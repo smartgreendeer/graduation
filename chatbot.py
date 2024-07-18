@@ -209,7 +209,7 @@ if feature in ["Document Q&A", "Summarization", "Quiz Generation", "Interactive 
                 quiz_source = st.radio("Choose quiz source:", ["Upload File", "Generate from Subject"])
                 
                 if quiz_source == "Upload File":
-                    uploaded_file = st.file_uploader("Upload a file📁:", type=["txt", "pdf"])
+                    uploaded_file = uploaded_file
                     if uploaded_file is not None:
                         file_content = read_file_content(uploaded_file)
                     else:
@@ -290,7 +290,7 @@ if feature in ["Document Q&A", "Summarization", "Quiz Generation", "Interactive 
                 quiz_source = st.radio("Choose quiz source:", ["Upload File", "Generate from Subject"])
                 
                 if quiz_source == "Upload File":
-                    uploaded_file = st.file_uploader("Upload a file📁:", type=["txt", "pdf"])
+                    uploaded_file = uploaded_file
                     if uploaded_file is not None:
                         file_content = read_file_content(uploaded_file)
                     else:
@@ -392,7 +392,7 @@ elif feature == "General Chatbot":
     user_input = st.text_input("You:")
     if user_input:
         response = chatbot_response(user_input)
-        st.write("AI Assistant:")
+        st.write("Johnify:")
         st.write(response)
 
 else:
