@@ -346,7 +346,7 @@ elif feature == "Translator":
     languages = [
         "Arabic", "Bengali", "Chinese (Simplified)", "Chinese (Traditional)", "Dutch", 
         "English", "French", "German", "Greek", "Hindi", "Italian", "Japanese", 
-        "Korean", "Portuguese", "Russian", "Spanish", "Swedish", "Turkish", "Urdu"
+        "Korean", "Portuguese", "Russian", "Spanish", "Swedish", "Turkish", "Urdu", "Kiswahili"
     ]
     
     target_language = st.selectbox("Select the language you want to translate to:", languages)
