@@ -137,6 +137,15 @@ def generate_quiz(file_content, difficulty):
     response = model.generate_content(prompt)
     return response.text
 
+# List of subjects for quiz generation
+SUBJECTS = [
+    "Mathematics", "Physics", "Chemistry", "Biology", "History", "Geography",
+    "Literature", "Computer Science", "Psychology", "Economics", "Political Science",
+    "Art History", "Music Theory", "Environmental Science", "Astronomy", "Philosophy",
+    "Sociology", "Anthropology", "Linguistics", "World Religions", "Physical Education",
+    "Nutrition", "Business Studies", "Law", "Engineering", "Medicine", "Foreign Languages"
+]
+
 # Function for chatbot responses
 @st.cache_data
 def chatbot_response(user_input):
@@ -209,18 +218,18 @@ if feature in ["Document Q&A", "Summarization", "Quiz Generation", "Interactive 
                 quiz_source = st.radio("Choose quiz source:", ["Upload File", "Generate from Subject"])
                 
                 if quiz_source == "Upload File":
-                    uploaded_file = uploaded_file
+                    uploaded_file = st.file_uploader("Upload a file📁:", type=["txt", "pdf"], key="interactive_quiz_uploader")
                     if uploaded_file is not None:
                         file_content = read_file_content(uploaded_file)
                     else:
                         file_content = None
                 else:
-                    subject = st.text_input("Enter a subject for the quiz:")
+                    subject = st.selectbox("Select a subject for the quiz:", SUBJECTS)
                     file_content = f"Generate a quiz about {subject}" if subject else None
 
-                difficulty = st.selectbox("Choose difficulty level:", ["Easy", "Intermediate", "Advanced"])
+                difficulty = st.selectbox("Choose difficulty level:", ["Easy", "Intermediate", "Advanced"], key="interactive_quiz_difficulty")
 
-                if st.button("Generate Quiz") and file_content:
+                if st.button("Generate Quiz", key="interactive_quiz_button") and file_content:
                     with st.spinner("Generating quiz..."):
                         quiz = generate_qui(file_content, difficulty)
                     if quiz:
@@ -231,6 +240,8 @@ if feature in ["Document Q&A", "Summarization", "Quiz Generation", "Interactive 
                         st.success("Quiz generated successfully!")
                     else:
                         st.error("Failed to generate quiz. Please try again.")
+
+    # ... (rest of the Interactive Quiz code)
 
                 # Display quiz questions and handle user responses
                 if 'quiz' in st.session_state and not st.session_state.get('quiz_completed', False):
@@ -287,21 +298,21 @@ if feature in ["Document Q&A", "Summarization", "Quiz Generation", "Interactive 
             elif feature == "Quiz Generation":
                 st.write("Quiz Generation")
                 
-                quiz_source = st.radio("Choose quiz source:", ["Upload File", "Generate from Subject"])
+                quiz_source = st.radio("Choose quiz source:", ["Upload File", "Generate from Subject"], key="quiz_gen_source")
                 
                 if quiz_source == "Upload File":
-                    uploaded_file = uploaded_file
+                    uploaded_file = st.file_uploader("Upload a file📁:", type=["txt", "pdf"], key="quiz_gen_uploader")
                     if uploaded_file is not None:
                         file_content = read_file_content(uploaded_file)
                     else:
                         file_content = None
                 else:
-                    subject = st.text_input("Enter a subject for the quiz:")
+                    subject = st.selectbox("Select a subject for the quiz:", SUBJECTS, key="quiz_gen_subject")
                     file_content = f"Generate a quiz about {subject}" if subject else None
 
-                difficulty = st.selectbox("Choose difficulty level:", ["Easy", "Intermediate", "Advanced"])
+                difficulty = st.selectbox("Choose difficulty level:", ["Easy", "Intermediate", "Advanced"], key="quiz_gen_difficulty")
 
-                if st.button("Generate Quiz") and file_content:
+                if st.button("Generate Quiz", key="quiz_gen_button") and file_content:
                     with st.spinner("Generating quiz..."):
                         quiz = generate_quiz(file_content, difficulty)
                     st.write("Quiz generated:")
