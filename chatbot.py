@@ -127,6 +127,28 @@ def generate_qui(content):
     st.error("All attempts to generate quiz failed.")
     return None
 
+# Function to generate quiz with difficulty level
+@st.cache_data
+def generate_quiz_with_difficulty(content, difficulty):
+    prompt = f"""Based on the following content, generate 15 multiple-choice questions at a {difficulty} level. 
+    For each question, provide 4 options (A, B, C, D) and indicate the correct answer. 
+    Format each question as follows:
+
+    Question: [Question text]
+    A) [Option A]
+    B) [Option B]
+    C) [Option C]
+    D) [Option D]
+    Correct Answer: [A/B/C/D]
+
+    Repeat this format for all 15 questions.
+
+    Content:
+    {content[:1000]}..."""
+
+    response = model.generate_content(prompt)
+    return response.text
+
 # Function to generate quiz (alternative version)
 @st.cache_data
 def generate_quiz(file_content):
@@ -206,14 +228,20 @@ if feature in ["Document Q&A", "Summarization", "Quiz Generation", "Interactive 
                 quiz_source = st.radio("Choose quiz source:", ["Upload File", "Generate from Subject"])
                 
                 if quiz_source == "Upload File":
-                    file_content = file_content
+                    uploaded_file = st.file_uploader("Upload a file📁:", type=["txt", "pdf"])
+                    if uploaded_file is not None:
+                        file_content = read_file_content(uploaded_file)
+                    else:
+                        file_content = None
                 else:
                     subject = st.text_input("Enter a subject for the quiz:")
                     file_content = f"Generate a quiz about {subject}" if subject else None
 
+                difficulty = st.select_box("Choose difficulty level:", ["Easy", "Intermediate", "Advanced"])
+
                 if st.button("Generate Quiz") and file_content:
                     with st.spinner("Generating quiz..."):
-                        quiz = generate_qui(file_content)
+                        quiz = generate_quiz_with_difficulty(file_content, difficulty)
                     if quiz:
                         st.session_state.quiz = quiz.split('\n\n')
                         st.session_state.current_question = 0
@@ -276,10 +304,26 @@ if feature in ["Document Q&A", "Summarization", "Quiz Generation", "Interactive 
             
             # Quiz Generation
             elif feature == "Quiz Generation":
-                if st.button("Generate Quiz"):
+                st.write("Quiz Generation")
+                
+                quiz_source = st.radio("Choose quiz source:", ["Upload File", "Generate from Subject"])
+                
+                if quiz_source == "Upload File":
+                    uploaded_file = st.file_uploader("Upload a file📁:", type=["txt", "pdf"])
+                    if uploaded_file is not None:
+                        file_content = read_file_content(uploaded_file)
+                    else:
+                        file_content = None
+                else:
+                    subject = st.text_input("Enter a subject for the quiz:")
+                    file_content = f"Generate a quiz about {subject}" if subject else None
+
+                difficulty = st.select_box("Choose difficulty level:", ["Easy", "Intermediate", "Advanced"])
+
+                if st.button("Generate Quiz") and file_content:
                     with st.spinner("Generating quiz..."):
-                        quiz = get_gemini_response("", file_content, mode="quiz")
-                    st.write("Quiz generated from the file📁:")
+                        quiz = generate_quiz_with_difficulty(file_content, difficulty)
+                    st.write("Quiz generated:")
                     st.write(quiz)
                     save_and_download(quiz, "quiz.txt")
 
@@ -346,7 +390,7 @@ elif feature == "Translator":
     languages = [
         "Arabic", "Bengali", "Chinese (Simplified)", "Chinese (Traditional)", "Dutch", 
         "English", "French", "German", "Greek", "Hindi", "Italian", "Japanese", 
-        "Korean", "Portuguese", "Russian", "Spanish", "Swedish", "Turkish", "Urdu", "Kiswahili"
+        "Korean", "Portuguese", "Russian", "Spanish", "Swedish", "Turkish", "Urdu", "Kiswahili", 
     ]
     
     target_language = st.selectbox("Select the language you want to translate to:", languages)
