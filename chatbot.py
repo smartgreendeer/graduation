@@ -222,7 +222,7 @@ if feature in ["Document Q&A", "Summarization", "Quiz Generation", "Interactive 
 
                 if st.button("Generate Quiz") and file_content:
                     with st.spinner("Generating quiz..."):
-                        quiz = generate_quiz_with_difficulty(file_content, difficulty)
+                        quiz = generate_qui(file_content, difficulty)
                     if quiz:
                         st.session_state.quiz = quiz.split('\n\n')
                         st.session_state.current_question = 0
@@ -303,7 +303,7 @@ if feature in ["Document Q&A", "Summarization", "Quiz Generation", "Interactive 
 
                 if st.button("Generate Quiz") and file_content:
                     with st.spinner("Generating quiz..."):
-                        quiz = generate_quiz_with_difficulty(file_content, difficulty)
+                        quiz = generate_quiz(file_content, difficulty)
                     st.write("Quiz generated:")
                     st.write(quiz)
                     save_and_download(quiz, "quiz.txt")
@@ -394,6 +394,9 @@ elif feature == "General Chatbot":
         response = chatbot_response(user_input)
         st.write("AI Assistant:")
         st.write(response)
+
+else:
+    st.warning("Please enter your name in the sidebar to access the features.")
 
 # Sidebar instructions
 st.sidebar.markdown("""
