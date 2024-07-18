@@ -1,8 +1,8 @@
-import streamlit as st
-import PyPDF2
-import ebooklib
+import streamlit as st #for gui
+import PyPDF2 #for reading and extracting text from pdf files
+import ebooklib #handling EPUB files in the first script
 from ebooklib import epub
-import os
+import os #joins with the operating system
 import tempfile
 import re
 

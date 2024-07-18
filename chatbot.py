@@ -1,14 +1,14 @@
 # Import necessary libraries
-import streamlit as st
-import google.generativeai as genai
-import os
-import io
-import requests
-import pandas as pd
-import matplotlib.pyplot as plt
-import PyPDF2
-from dotenv import load_dotenv
-import time
+import streamlit as st #for gui
+import google.generativeai as genai #interact with generative models
+import os #joins with the operating system
+import io #deals with input and output
+import requests #for making http request for sending information to zapier
+import pandas as pd #for data manipulation and analysis, particularly in the data visualization feature
+import matplotlib.pyplot as plt #for  creating charts and plots in the data visualization feature
+import PyPDF2 #for reading and extracting text from pdf files
+from dotenv import load_dotenv #for environmental variables
+import time #for the time
 from google.api_core import exceptions as google_exceptions
 
 # Load environment variables
@@ -303,12 +303,26 @@ elif feature == "Data Visualization":
         st.write("Data Preview:")
         st.write(data.head())
         
-        st.write("Select columns for visualization:")
-        x_column = st.selectbox("X-axis", data.columns)
-        y_column = st.selectbox("Y-axis", data.columns)
+        # Automatically select the first two columns for initial visualization
+        columns = list(data.columns)
+        x_column = columns[0]
+        y_column = columns[1] if len(columns) > 1 else columns[0]
+        
+        # Create initial plot
+        fig, ax = plt.subplots()
+        data.plot(kind="bar", x=x_column, y=y_column, ax=ax)
+        plt.title(f"Initial Chart: {y_column} vs {x_column}")
+        plt.xlabel(x_column)
+        plt.ylabel(y_column)
+        st.pyplot(fig)
+        
+        st.write("Customize your visualization:")
+        x_column = st.selectbox("X-axis", data.columns, index=columns.index(x_column))
+        y_column = st.selectbox("Y-axis", data.columns, index=columns.index(y_column))
         
         chart_type = st.radio("Select chart type", ["Bar", "Line", "Scatter"])
         
+        # Create customized plot
         fig, ax = plt.subplots()
         if chart_type == "Bar":
             data.plot(kind="bar", x=x_column, y=y_column, ax=ax)
