@@ -6,6 +6,7 @@ import os
 import tempfile
 import re
 
+# Function to extract text from PDF files
 def extract_text_from_pdf(file):
     pdf_reader = PyPDF2.PdfReader(file)
     num_pages = len(pdf_reader.pages)
@@ -15,38 +16,44 @@ def extract_text_from_pdf(file):
         text += page.extract_text()
     return text
 
+# Function to extract text from EPUB files
 def extract_text_from_epub(file_path):
     book = epub.read_epub(file_path)
     text = ""
     for item in book.get_items_of_type(ebooklib.ITEM_DOCUMENT):
         content = item.content.decode('utf-8', errors='ignore')
-        clean_text = re.sub('<[^<]+?>', '', content)
+        clean_text = re.sub('<[^<]+?>', '', content)  # Remove HTML tags
         text += clean_text + "\n\n"
     return text.strip()
 
-
-
+# Function to extract text from TXT files
 def extract_text_from_txt(file):
     text = file.read()
     return text
 
+# Function to save extracted text as a TXT file
 def save_text_as_txt(text, filename):
     with open(filename, "w", encoding="utf-8") as f:
         f.write(text)
-        
+
+# Function to delete temporary files
 def delete_temp_file(file_path):
     os.remove(file_path)
 
+# Main function to run the Streamlit app
 def main():
+    # Set up the Streamlit page
     st.set_page_config(page_title='Student Helper', page_icon="👨‍🎓")
     st.title('👩‍🎓Student Helper👨‍🎓')
 
+    # Create a sidebar for user input
     st.sidebar.title("Student aid")
     name = st.sidebar.text_input("Hey you! Help us to be of help to you.\nPlease, input your name:")
 
     if name:
         st.sidebar.write(f"Welcome, {name}! Thank you for choosing us as your go-to student helper.")
-    
+
+    # Main page content
     st.markdown('This app helps you to extract text from PDF, EPUB and TXT files')
     st.write("Upload a file📁:")
     uploaded_file = st.file_uploader("Select a file📁 from your device💻", type=["pdf", "epub"])
@@ -57,9 +64,10 @@ def main():
         # Display file content
         st.subheader("File Content:")
         if uploaded_file.type == "application/pdf":
+            # Handle PDF files
             text = extract_text_from_pdf(uploaded_file)
             st.text(text[:500])  # Display first 500 characters
-            
+
             if st.button("Convert and Download as TXT🖹"):
                 filename = f"{uploaded_file.name.split('.')[0]}.txt"
                 save_text_as_txt(text, filename)
@@ -70,13 +78,14 @@ def main():
                     file_name=filename,
                     mime="text/plain"
                 )
-            
+
         elif uploaded_file.type == "application/epub+zip":
+            # Handle EPUB files
             # Save the EPUB file temporarily
             with tempfile.NamedTemporaryFile(delete=False) as temp_file:
                 temp_file.write(uploaded_file.read())  # Write contents of uploaded file
                 temp_file_path = temp_file.name
-            
+
             text = extract_text_from_epub(temp_file_path)
             st.text(text[:500])  # Display first 500 characters
 

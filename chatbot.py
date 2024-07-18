@@ -1,3 +1,4 @@
+# Import necessary libraries
 import streamlit as st
 import google.generativeai as genai
 import os
@@ -10,17 +11,22 @@ from dotenv import load_dotenv
 import time
 from google.api_core import exceptions as google_exceptions
 
-
+# Load environment variables
 load_dotenv()
 
+# Configure Google AI API
 genai.configure(api_key=os.getenv("GOOGLE_API_KEY_1"))
 
+# Initialize the Gemini Pro model
 model = genai.GenerativeModel('gemini-pro')
 
+# Set up Streamlit page configuration
 st.set_page_config(page_title="Student Helper", page_icon="👨‍🎓")
 
+# Function to read content from uploaded files
 @st.cache_data
 def read_file_content(uploaded_file):
+    # Handle different file types
     if uploaded_file.type == "text/plain":
         return uploaded_file.getvalue().decode("utf-8")
     elif uploaded_file.type == "application/pdf":
@@ -30,8 +36,10 @@ def read_file_content(uploaded_file):
         st.error("Unsupported file type. Please upload a .txt or .pdf file.")
         return None
 
+# Function to get responses from the Gemini model
 @st.cache_data
 def get_gemini_response(input_text, file_content, mode="qa"):
+    # Prepare prompts based on the selected mode
     if mode == "qa":
         prompt = f"Based on the following content:\n\n{file_content}\n\nAnswer this question: {input_text}"
     elif mode == "summarize":
@@ -41,18 +49,21 @@ def get_gemini_response(input_text, file_content, mode="qa"):
     response = model.generate_content(prompt)
     return response.text
 
+# Function for sentiment analysis
 @st.cache_data
 def analyze_sentiment(text):
     prompt = f"Analyze the sentiment of the following text and categorize it as positive, negative, or neutral. Provide a brief explanation for your categorization:\n\n{text}"
     response = model.generate_content(prompt)
     return response.text
 
+# Function for text translation
 @st.cache_data
 def translate_text(text, target_language):
     prompt = f"Translate the following text to {target_language}:\n\n{text}"
     response = model.generate_content(prompt)
     return response.text
 
+# Function to save and provide download option for content
 def save_and_download(content, filename):
     buffer = io.BytesIO()
     buffer.write(content.encode())
@@ -65,6 +76,7 @@ def save_and_download(content, filename):
         mime="text/plain"
     )
 
+# Function to generate quiz with retry mechanism
 @st.cache_data
 def generate_qui(content):
     max_retries = 3
@@ -72,6 +84,7 @@ def generate_qui(content):
 
     for attempt in range(max_retries):
         try:
+            # Prepare prompt based on content type
             if content.startswith("Generate a quiz about"):
                 prompt = f"""{content}. Generate 15 multiple-choice questions. 
                 For each question, provide 4 options (A, B, C, D) and indicate the correct answer. 
@@ -114,18 +127,21 @@ def generate_qui(content):
     st.error("All attempts to generate quiz failed.")
     return None
 
+# Function to generate quiz (alternative version)
 @st.cache_data
 def generate_quiz(file_content):
     prompt = f"Based on the following content, generate 15 multiple-choice questions. For each question, provide 4 options (A, B, C, D) and indicate the correct answer. Format each question as follows:\n\nQ1. Question text\nA) Option A\nB) Option B\nC) Option C\nD) Option D\nCorrect Answer: X\n\nContent:\n{file_content}"
     response = model.generate_content(prompt)
     return response.text
 
+# Function for chatbot responses
 @st.cache_data
 def chatbot_response(user_input):
     prompt = f"User: {user_input}\nAssistant: "
     response = model.generate_content(prompt)
     return response.text
 
+# Function to send user name to Zapier
 @st.cache_data
 def send_name_to_zapier(name):
     webhook_url = "https://hooks.zapier.com/hooks/catch/19454215/22bv1r6/"
@@ -138,7 +154,7 @@ def send_name_to_zapier(name):
         st.error(f"Failed to send name to Zapier: {str(e)}")
         return False
 
-# Main app
+# Main app logic
 st.title("👩‍🎓Student Helper👨‍🎓")
 st.sidebar.title("Student aid")
 name = st.sidebar.text_input("Hey you! Help us to be of help to you.\nPlease, input your name:")
@@ -148,10 +164,13 @@ if name:
         st.sidebar.write(f"Welcome, {name}! Thank you for choosing us as your go-to student helper.")
     else:
         st.sidebar.write(f"Welcome, {name}! We couldn't register your name, but we're still here to help.")
+
+# Feature selection
 feature = st.sidebar.selectbox("Choose a feature that you require as student", 
                                ["Document Q&A", "Summarization", "Quiz Generation", "Sentiment Analysis", 
                                 "Data Visualization", "Translator", "Interactive Quiz", "General Chatbot"])
 
+# Logic for each feature
 if feature in ["Document Q&A", "Summarization", "Quiz Generation", "Interactive Quiz"]:
     uploaded_file = st.file_uploader("Upload a file📁:", type=["txt", "pdf"])
 
@@ -161,6 +180,7 @@ if feature in ["Document Q&A", "Summarization", "Quiz Generation", "Interactive 
         if file_content:
             st.success("File uploaded successfully✅!")
             
+            # Document Q&A
             if feature == "Document Q&A":
                 user_question = st.text_input("Ask a question about the file uploaded📁:")
                 if user_question:
@@ -170,6 +190,7 @@ if feature in ["Document Q&A", "Summarization", "Quiz Generation", "Interactive 
                     st.write(response)
                     save_and_download(response, "qa_response.txt")
             
+            # Summarization
             elif feature == "Summarization":
                 if st.button("Summarize Document"):
                     with st.spinner("Generating summary..."):
@@ -178,6 +199,7 @@ if feature in ["Document Q&A", "Summarization", "Quiz Generation", "Interactive 
                     st.write(summary)
                     save_and_download(summary, "summary.txt")
             
+            # Interactive Quiz
             elif feature == "Interactive Quiz":
                 st.write("Interactive Quiz")
                 
@@ -201,6 +223,7 @@ if feature in ["Document Q&A", "Summarization", "Quiz Generation", "Interactive 
                     else:
                         st.error("Failed to generate quiz. Please try again.")
 
+                # Display quiz questions and handle user responses
                 if 'quiz' in st.session_state and not st.session_state.get('quiz_completed', False):
                     question_block = st.session_state.quiz[st.session_state.current_question]
                     question_lines = question_block.split('\n')
@@ -226,6 +249,7 @@ if feature in ["Document Q&A", "Summarization", "Quiz Generation", "Interactive 
                         
                         st.experimental_rerun()
 
+                # Display quiz results
                 if 'quiz' in st.session_state and st.session_state.get('quiz_completed', False):
                     total_questions = len(st.session_state.quiz)
                     score = st.session_state.score
@@ -250,6 +274,7 @@ if feature in ["Document Q&A", "Summarization", "Quiz Generation", "Interactive 
                                 del st.session_state[key]
                         st.experimental_rerun()
             
+            # Quiz Generation
             elif feature == "Quiz Generation":
                 if st.button("Generate Quiz"):
                     with st.spinner("Generating quiz..."):
@@ -258,6 +283,7 @@ if feature in ["Document Q&A", "Summarization", "Quiz Generation", "Interactive 
                     st.write(quiz)
                     save_and_download(quiz, "quiz.txt")
 
+# Sentiment Analysis
 elif feature == "Sentiment Analysis":
     text_for_analysis = st.text_area("Enter text for sentiment analysis:")
     if st.button("Analyze Sentiment"):
@@ -267,6 +293,7 @@ elif feature == "Sentiment Analysis":
         st.write(sentiment)
         save_and_download(sentiment, "sentiment_analysis.txt")
 
+# Data Visualization
 elif feature == "Data Visualization":
     st.write("Upload a CSV file to visualize data")
     uploaded_file = st.file_uploader("Choose a CSV file", type="csv")
@@ -298,6 +325,7 @@ elif feature == "Data Visualization":
         plot_description = f"Chart Type: {chart_type}\nX-axis: {x_column}\nY-axis: {y_column}"
         save_and_download(plot_description, "plot_description.txt")
 
+# Translator
 elif feature == "Translator":
     st.write("Enter text to translate:")
     text_to_translate = st.text_area("Please type your text that you want to translate")
@@ -313,6 +341,7 @@ elif feature == "Translator":
         else:
             st.error("Please fill out all fields")
 
+# General Chatbot
 elif feature == "General Chatbot":
     st.write("Chat with our general-purpose AI assistant:")
     user_input = st.text_input("You:")
@@ -321,6 +350,7 @@ elif feature == "General Chatbot":
         st.write("AI Assistant:")
         st.write(response)
 
+# Sidebar instructions
 st.sidebar.markdown("""
 ## How to use:
 1. Choose a feature from the sidebar
