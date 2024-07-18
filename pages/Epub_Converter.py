@@ -5,6 +5,7 @@ from ebooklib import epub
 import os #joins with the operating system
 import tempfile
 import re
+import requests
 
 # Function to extract text from PDF files
 def extract_text_from_pdf(file):
