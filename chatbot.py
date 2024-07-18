@@ -218,7 +218,7 @@ if feature in ["Document Q&A", "Summarization", "Quiz Generation", "Interactive 
                     subject = st.text_input("Enter a subject for the quiz:")
                     file_content = f"Generate a quiz about {subject}" if subject else None
 
-                difficulty = st.select_box("Choose difficulty level:", ["Easy", "Intermediate", "Advanced"])
+                difficulty = st.selectbox("Choose difficulty level:", ["Easy", "Intermediate", "Advanced"])
 
                 if st.button("Generate Quiz") and file_content:
                     with st.spinner("Generating quiz..."):
@@ -299,7 +299,7 @@ if feature in ["Document Q&A", "Summarization", "Quiz Generation", "Interactive 
                     subject = st.text_input("Enter a subject for the quiz:")
                     file_content = f"Generate a quiz about {subject}" if subject else None
 
-                difficulty = st.select_box("Choose difficulty level:", ["Easy", "Intermediate", "Advanced"])
+                difficulty = st.selectbox("Choose difficulty level:", ["Easy", "Intermediate", "Advanced"])
 
                 if st.button("Generate Quiz") and file_content:
                     with st.spinner("Generating quiz..."):
