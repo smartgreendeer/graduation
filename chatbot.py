@@ -341,7 +341,15 @@ elif feature == "Data Visualization":
 elif feature == "Translator":
     st.write("Enter text to translate:")
     text_to_translate = st.text_area("Please type your text that you want to translate")
-    target_language = st.text_input("Input language you require:")
+    
+    # List of common languages
+    languages = [
+        "Arabic", "Bengali", "Chinese (Simplified)", "Chinese (Traditional)", "Dutch", 
+        "English", "French", "German", "Greek", "Hindi", "Italian", "Japanese", 
+        "Korean", "Portuguese", "Russian", "Spanish", "Swedish", "Turkish", "Urdu"
+    ]
+    
+    target_language = st.selectbox("Select the language you want to translate to:", languages)
     
     if st.button("Translate"):
         if text_to_translate and target_language:
@@ -351,7 +359,7 @@ elif feature == "Translator":
             st.write(translation)
             save_and_download(translation, "translation.txt")
         else:
-            st.error("Please fill out all fields")
+            st.error("Please enter text to translate and select a target language.")
 
 # General Chatbot
 elif feature == "General Chatbot":
