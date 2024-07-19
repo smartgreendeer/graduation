@@ -183,7 +183,7 @@ feature = st.sidebar.selectbox("Choose a feature that you require as student",
                                 "Data Visualization", "Translator", "Interactive Quiz", "General Chatbot"])
 
 # Logic for each feature
-if feature in ["Document Q&A", "Summarization", "Quiz Generation", "Interactive Quiz"]:
+if feature in ["Document Q&A", "Summarization"]:
     uploaded_file = st.file_uploader("Upload a file📁:", type=["txt", "pdf"])
 
     if uploaded_file is not None:
