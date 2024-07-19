@@ -241,8 +241,6 @@ if feature in ["Document Q&A", "Summarization", "Quiz Generation", "Interactive 
                     else:
                         st.error("Failed to generate quiz. Please try again.")
 
-    # ... (rest of the Interactive Quiz code)
-
                 # Display quiz questions and handle user responses
                 if 'quiz' in st.session_state and not st.session_state.get('quiz_completed', False):
                     question_block = st.session_state.quiz[st.session_state.current_question]
