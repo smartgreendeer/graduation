@@ -211,111 +211,111 @@ if feature in ["Document Q&A", "Summarization"]:
                     st.write(summary)
                     save_and_download(summary, "summary.txt")
             
-            # Interactive Quiz
-            elif feature == "Interactive Quiz":
-                st.write("Interactive Quiz")
-                
-                quiz_source = st.radio("Choose quiz source:", ["Upload File", "Generate from Subject"])
-                
-                if quiz_source == "Upload File":
-                    uploaded_file = st.file_uploader("Upload a file📁:", type=["txt", "pdf"], key="interactive_quiz_uploader")
-                    if uploaded_file is not None:
-                        file_content = read_file_content(uploaded_file)
-                    else:
-                        file_content = None
-                else:
-                    subject = st.selectbox("Select a subject for the quiz:", SUBJECTS)
-                    file_content = f"Generate a quiz about {subject}" if subject else None
+# Interactive Quiz
+elif feature == "Interactive Quiz":
+    st.write("Interactive Quiz")
+    
+    quiz_source = st.radio("Choose quiz source:", ["Upload File", "Generate from Subject"])
+    
+    if quiz_source == "Upload File":
+        uploaded_file = st.file_uploader("Upload a file📁:", type=["txt", "pdf"], key="interactive_quiz_uploader")
+        if uploaded_file is not None:
+            file_content = read_file_content(uploaded_file)
+        else:
+            file_content = None
+    else:
+        subject = st.selectbox("Select a subject for the quiz:", SUBJECTS)
+        file_content = f"Generate a quiz about {subject}" if subject else None
 
-                difficulty = st.selectbox("Choose difficulty level:", ["Easy", "Intermediate", "Advanced"], key="interactive_quiz_difficulty")
+    difficulty = st.selectbox("Choose difficulty level:", ["Easy", "Intermediate", "Advanced"], key="interactive_quiz_difficulty")
 
-                if st.button("Generate Quiz", key="interactive_quiz_button") and file_content:
-                    with st.spinner("Generating quiz..."):
-                        quiz = generate_qui(file_content, difficulty)
-                    if quiz:
-                        st.session_state.quiz = quiz.split('\n\n')
-                        st.session_state.current_question = 0
-                        st.session_state.score = 0
-                        st.session_state.quiz_completed = False
-                        st.success("Quiz generated successfully!")
-                    else:
-                        st.error("Failed to generate quiz. Please try again.")
+    if st.button("Generate Quiz", key="interactive_quiz_button") and file_content:
+        with st.spinner("Generating quiz..."):
+            quiz = generate_qui(file_content, difficulty)
+        if quiz:
+            st.session_state.quiz = quiz.split('\n\n')
+            st.session_state.current_question = 0
+            st.session_state.score = 0
+            st.session_state.quiz_completed = False
+            st.success("Quiz generated successfully!")
+        else:
+            st.error("Failed to generate quiz. Please try again.")
 
-                # Display quiz questions and handle user responses
-                if 'quiz' in st.session_state and not st.session_state.get('quiz_completed', False):
-                    question_block = st.session_state.quiz[st.session_state.current_question]
-                    question_lines = question_block.split('\n')
-                    
-                    st.write(f"Question {st.session_state.current_question + 1}:")
-                    st.write(question_lines[0].replace("Question: ", ""))
-                    
-                    options = question_lines[1:5]
-                    user_answer = st.radio("Select your answer:", options, format_func=lambda x: x)
-                    
-                    if st.button("Submit Answer"):
-                        correct_answer = question_lines[-1].replace("Correct Answer: ", "")
-                        if user_answer.startswith(correct_answer):
-                            st.success("Correct!")
-                            st.session_state.score += 1
-                        else:
-                            st.error(f"Incorrect. The correct answer was {correct_answer}")
-                        
-                        st.session_state.current_question += 1
-                        
-                        if st.session_state.current_question >= len(st.session_state.quiz):
-                            st.session_state.quiz_completed = True
-                        
-                        st.experimental_rerun()
-
-                # Display quiz results
-                if 'quiz' in st.session_state and st.session_state.get('quiz_completed', False):
-                    total_questions = len(st.session_state.quiz)
-                    score = st.session_state.score
-                    percentage = (score / total_questions) * 100
-
-                    st.write(f"Quiz completed!")
-                    st.write(f"Your score: {score}/{total_questions}")
-                    st.write(f"Percentage: {percentage:.2f}%")
-
-                    if percentage >= 90:
-                        st.success("Excellent work! You've mastered this topic!")
-                    elif percentage >= 70:
-                        st.success("Great job! You have a good understanding of the material.")
-                    elif percentage >= 50:
-                        st.warning("Good effort! There's room for improvement. Keep studying!")
-                    else:
-                        st.error("You might need to review this topic more. Don't give up!")
-
-                    if st.button("Start New Quiz"):
-                        for key in list(st.session_state.keys()):
-                            if key in ['quiz', 'current_question', 'score', 'quiz_completed']:
-                                del st.session_state[key]
-                        st.experimental_rerun()
+    # Display quiz questions and handle user responses
+    if 'quiz' in st.session_state and not st.session_state.get('quiz_completed', False):
+        question_block = st.session_state.quiz[st.session_state.current_question]
+        question_lines = question_block.split('\n')
+        
+        st.write(f"Question {st.session_state.current_question + 1}:")
+        st.write(question_lines[0].replace("Question: ", ""))
+        
+        options = question_lines[1:5]
+        user_answer = st.radio("Select your answer:", options, format_func=lambda x: x)
+        
+        if st.button("Submit Answer"):
+            correct_answer = question_lines[-1].replace("Correct Answer: ", "")
+            if user_answer.startswith(correct_answer):
+                st.success("Correct!")
+                st.session_state.score += 1
+            else:
+                st.error(f"Incorrect. The correct answer was {correct_answer}")
             
-            # Quiz Generation
-            elif feature == "Quiz Generation":
-                st.write("Quiz Generation")
-                
-                quiz_source = st.radio("Choose quiz source:", ["Upload File", "Generate from Subject"], key="quiz_gen_source")
-                
-                if quiz_source == "Upload File":
-                    uploaded_file = st.file_uploader("Upload a file📁:", type=["txt", "pdf"], key="quiz_gen_uploader")
-                    if uploaded_file is not None:
-                        file_content = read_file_content(uploaded_file)
-                    else:
-                        file_content = None
-                else:
-                    subject = st.selectbox("Select a subject for the quiz:", SUBJECTS, key="quiz_gen_subject")
-                    file_content = f"Generate a quiz about {subject}" if subject else None
+            st.session_state.current_question += 1
+            
+            if st.session_state.current_question >= len(st.session_state.quiz):
+                st.session_state.quiz_completed = True
+            
+            st.experimental_rerun()
 
-                difficulty = st.selectbox("Choose difficulty level:", ["Easy", "Intermediate", "Advanced"], key="quiz_gen_difficulty")
+    # Display quiz results
+    if 'quiz' in st.session_state and st.session_state.get('quiz_completed', False):
+        total_questions = len(st.session_state.quiz)
+        score = st.session_state.score
+        percentage = (score / total_questions) * 100
 
-                if st.button("Generate Quiz", key="quiz_gen_button") and file_content:
-                    with st.spinner("Generating quiz..."):
-                        quiz = generate_quiz(file_content, difficulty)
-                    st.write("Quiz generated:")
-                    st.write(quiz)
-                    save_and_download(quiz, "quiz.txt")
+        st.write(f"Quiz completed!")
+        st.write(f"Your score: {score}/{total_questions}")
+        st.write(f"Percentage: {percentage:.2f}%")
+
+        if percentage >= 90:
+            st.success("Excellent work! You've mastered this topic!")
+        elif percentage >= 70:
+            st.success("Great job! You have a good understanding of the material.")
+        elif percentage >= 50:
+            st.warning("Good effort! There's room for improvement. Keep studying!")
+        else:
+            st.error("You might need to review this topic more. Don't give up!")
+
+        if st.button("Start New Quiz"):
+            for key in list(st.session_state.keys()):
+                if key in ['quiz', 'current_question', 'score', 'quiz_completed']:
+                    del st.session_state[key]
+            st.experimental_rerun()
+
+# Quiz Generation
+elif feature == "Quiz Generation":
+    st.write("Quiz Generation")
+    
+    quiz_source = st.radio("Choose quiz source:", ["Upload File", "Generate from Subject"], key="quiz_gen_source")
+    
+    if quiz_source == "Upload File":
+        uploaded_file = st.file_uploader("Upload a file📁:", type=["txt", "pdf"], key="quiz_gen_uploader")
+        if uploaded_file is not None:
+            file_content = read_file_content(uploaded_file)
+        else:
+            file_content = None
+    else:
+        subject = st.selectbox("Select a subject for the quiz:", SUBJECTS, key="quiz_gen_subject")
+        file_content = f"Generate a quiz about {subject}" if subject else None
+
+    difficulty = st.selectbox("Choose difficulty level:", ["Easy", "Intermediate", "Advanced"], key="quiz_gen_difficulty")
+
+    if st.button("Generate Quiz", key="quiz_gen_button") and file_content:
+        with st.spinner("Generating quiz..."):
+            quiz = generate_quiz(file_content, difficulty)
+        st.write("Quiz generated:")
+        st.write(quiz)
+        save_and_download(quiz, "quiz.txt")
 
 # Sentiment Analysis
 elif feature == "Sentiment Analysis":
