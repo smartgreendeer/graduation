@@ -139,7 +139,11 @@ def generate_quiz(file_content, difficulty):
 
 # List of subjects for quiz generation
 SUBJECTS = [
-    "Mathematics", "Physics", "Chemistry", "Biology", "History", "Geography"
+    "Mathematics", "Physics", "Chemistry", "Biology", "History", "Geography",
+    "Literature", "Computer Science", "Psychology", "Economics", "Political Science",
+    "Art History", "Music Theory", "Environmental Science", "Astronomy", "Philosophy",
+    "Sociology", "Anthropology", "Linguistics", "World Religions", "Physical Education",
+    "Nutrition", "Business Studies", "Law", "Engineering", "Medicine", "Foreign Languages"
 ]
 
 # Function for chatbot responses
