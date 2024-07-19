@@ -42,7 +42,7 @@ def delete_temp_file(file_path):
     os.remove(file_path)
     
     
-# Function to send user name to Zapier
+# Function to send name to Zapier
 @st.cache_data
 def send_name_to_zapier(name):
     webhook_url = "https://hooks.zapier.com/hooks/catch/19454215/22bv1r6/"
@@ -84,7 +84,7 @@ def main():
         if uploaded_file.type == "application/pdf":
             # Handle PDF files
             text = extract_text_from_pdf(uploaded_file)
-            st.text(text[:500])  # Display first 500 characters
+            st.text(text[:500])  # Display first 500 characters to preview 
 
             if st.button("Convert and Download as TXT🖹"):
                 filename = f"{uploaded_file.name.split('.')[0]}.txt"
